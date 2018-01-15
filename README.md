@@ -1,18 +1,19 @@
 # Hadoop-ansible
-- Install Hadoop cluster with ansible
-- Now Support CentOS 7.x
-- JDK is  Openjdk-1.8
-- Hadoop is the latest version 3.0.0
-- Hive is the version 2.3.2
+- 利用ansible安装Hadoop相关组件
+- 目前适用于 CentOS 7.x
+- JDK 版本  Openjdk-1.8
+- Hadoop 版本 3.0.0
+- Hive 版本 2.3.2
+- Hbase 版本 1.2.6
 
-## Before Install
-Use DNS Server or update /etc/hosts for all servers
+## 安装前所需操作
+配置DNS服务器用于主机名解析或者更新所有集群服务器/etc/hosts
 
-## Install Hadoop
-1. Download Hadoop to any path
-2. Update the {{ download_path }} in vars/var_basic.yml
+## 安装 Hadoop
+1. 下载Hadoop
+2. 更新vars/var_basic.yml中的 {{ download_path }}
 ```
-download_path: "/home/pippo/Downloads" # your local path 
+download_path: "/home/pippo/Downloads" # your local path
 hadoop_version: "3.0.0" # your hadoop version
 hadoop_path: "/home/hadoop" # default in user "hadoop" home
 hadoop_config_path: "/home/hadoop/hadoop-{{hadoop_version}}/etc/hadoop"
@@ -21,10 +22,10 @@ hadoop_dfs_name: "/home/hadoop/dfs/name"
 hadoop_dfs_data: "/home/hadoop/dfs/data"
 
 ```
-3. Use ansible template to generate the hadoop configration, so If your want to add more properties, just update the vars/var_basic.yml.default is 
+3. 采用ansible template动态生成配置文件, 如果你需要增加配置,可以直接更新vars/var_xxx.yml中相关properties数组.Hadoop默认配置为
 
 ```
-# hadoop configration 
+# hadoop configration
 hdfs_port: 9000
 core_site_properties:
   - {
@@ -107,7 +108,7 @@ yarn_site_properties:
   - {
     "name": "yarn.nodemanager.aux-services",
     "value": "mapreduce_shuffle"
-  } 
+  }
   - {
     "name": "yarn.nodemanager.aux-services.mapreduce.shuffle.class",
     "value": "org.apache.hadoop.mapred.ShuffleHandler"
@@ -116,7 +117,7 @@ yarn_site_properties:
 
 
 ---
-Watch This
+**注意**
 ```
 hdfs_site_properties:
   - {
@@ -133,7 +134,7 @@ hdfs_site_properties:
   }
   - {
       "name":"dfs.replication",
-      "value":"{{ groups['workers']|length }}"  # this is  the group "workers" you define in hosts/host 
+      "value":"{{ groups['workers']|length }}"  # this is  the group "workers" you define in hosts/host
   }
   - {
     "name":"dfs.webhdfs.enabled",
@@ -141,10 +142,10 @@ hdfs_site_properties:
   }
 ```
 
-### Install Master
-check the master.yml
+### 安装 Master
+1. 查看master.yml
 ```
-- hosts: master 
+- hosts: master
   remote_user: root
   vars_files:
    - vars/user.yml
@@ -154,28 +155,28 @@ check the master.yml
      add_user: true           # add user "hadoop"
      generate_key: true       # generate the ssh key
      open_firewall: true      # for CentOS 7.x is firewalld
-     disable_firewall: false  # disable firewalld 
+     disable_firewall: false  # disable firewalld
      install_hadoop: true     # install hadoop,if you just want to update the configuration, set to false
      config_hadoop: true      # Update configuration
   roles:
     - user                    # add user and generate the ssh key
     - fetch_public_key        # get the key and put it in your localhost
-    - authorized              # push the ssh key to the remote server 
+    - authorized              # push the ssh key to the remote server
     - java                    # install jdk
     - hadoop                  # install hadoop
 
 ```
-run shell like
+2. 执行shell命令
 
 ```
 ansible-playbook -i hosts/host master.yml
 ```
 
-### Install Workers
-
+### 安装 Workers
+1. 查看 workers.yml
 ```
-# Add Master Public Key   # get master ssh public key 
-- hosts: master 
+# Add Master Public Key   # get master ssh public key
+- hosts: master
   remote_user: root
   vars_files:
    - vars/user.yml
@@ -184,7 +185,7 @@ ansible-playbook -i hosts/host master.yml
   roles:
     - fetch_public_key
 
-- hosts: workers 
+- hosts: workers
   remote_user: root
   vars_files:
    - vars/user.yml
@@ -204,7 +205,8 @@ ansible-playbook -i hosts/host master.yml
     - hadoop
 
 ```
-run shell like:
+执行shell:
+
 ```
 master_ip:  your hadoop master ip
 master_hostname: your hadoop master hostname
@@ -215,9 +217,9 @@ ansible-playbook -i hosts/host workers.yml -e "master_ip=172.16.251.70 master_ho
 
 ```
 
-### Install hive
-1. **Create database first and give right authority**
-2. check vars/var_hive.yml
+### 安装 hive
+1. **建立数据库，并且赋予正确的权限**
+2. 查看 vars/var_hive.yml
 ```
 ---
 
@@ -235,7 +237,7 @@ hive_warehouse: "/user/hive/warehouse"                                # your hdf
 hive_scratchdir: "/user/hive/tmp"
 hive_querylog_location: "/user/hive/log"
 
-hive_hdfs_path: 
+hive_hdfs_path:
   - "{{ hive_warehouse }}"
   - "{{ hive_scratchdir }}"
   - "{{ hive_querylog_location }}"
@@ -296,7 +298,7 @@ firewall_ports:
   - "{{ hive_metastore_port }}"
 ```
 
-3. check hive.yml
+3. 查看 hive.yml
 
 ```
 - hosts: hive                   # in hosts/host
@@ -315,13 +317,126 @@ firewall_ports:
     - hive
 
 ```
-4. run it
+4. 执行shell
 
 ```
 ansible-playbook -i hosts/host hive.yml
 
 ```
 
+## Hbase
+
+1. 查看 vars/var_hbase.yml
+
+```
+---
+# hbase basic vars
+download_path: "/home/pippo/Downloads"    # your local download path
+hbase_version: "1.2.6"                    # hbase version
+hbase_path: "/home/hadoop"                # install dir
+hbase_config_path: "/home/hadoop/hbase-{{hbase_version}}/conf"
+
+hbase_tmp: "{{ hbase_path }}/hbase/tmp"
+hbase_zookeeper_config_path: "{{ hbase_path }}/hbase/zookeeper"
+hbase_log_path: "{{ hbase_path }}/hbase/logs"
+
+hbase_create_path:
+  - "{{ hbase_tmp }}"
+  - "{{ hbase_zookeeper_config_path }}"
+  - "{{ hbase_log_path }}"
+
+
+# hbase configration
+hbase_hdfs_path: "/hbase"
+zk_hosts: "zookeeper"                  #zookeeper group name in hosts/host
+zk_client_port: 12181                  #zookeeper client port
+
+hbase_master_port: 60000               #hbase port
+hbase_master_info_port: 60010
+hbase_regionserver_port: 60020
+hbase_regionserver_info_port: 60030
+hbase_rest_port: 8060
+
+
+hbase_site_properties:                 #property
+  - {
+      "name":"hbase.master",
+      "value":"{{ hbase_master_port }}"
+  }
+  - {
+      "name":"hbase.master.info.port",
+      "value":"{{ hbase_master_info_port }}"
+  }
+  - {
+      "name":"hbase.tmp.dir",
+      "value":"{{ hbase_tmp }}"
+  }
+  - {
+      "name":"hbase.rootdir",
+      "value":"hdfs://{{ master_hostname }}:{{ hdfs_port }}{{ hbase_hdfs_path }}"
+  }
+  - {
+      "name":"hbase.regionserver.port",
+      "value":"{{ hbase_regionserver_port }}"
+  }
+  - {
+      "name":"hbase.regionserver.info.port",
+      "value":"{{ hbase_regionserver_info_port }}"
+  }
+  - {
+      "name":"hbase.rest.port",
+      "value":"{{ hbase_rest_port }}"
+  }
+  - {
+      "name":"hbase.cluster.distributed",
+      "value":"true"
+  }
+  - {
+      "name":"hbase.zookeeper.quorum"
+  }
+
+
+firewall_ports:
+  - "{{ hbase_master_port }}"
+  - "{{ hbase_master_info_port }}"
+  - "{{ hbase_regionserver_port }}"
+  - "{{ hbase_regionserver_info_port }}"
+  - "{{ hbase_rest_port }}"
+ 
+```
+
+2. 添加 zookeeper 至 hosts/host
+```
+[zookeeper]
+172.16.251.70
+172.16.251.71
+172.16.251.72
+
+```
+3. zookeeper 集群快速安装可以使用 [zookeeper-ansible](https://gitee.com/pippozq/zookeeper-ansible)
+4. 查看 hbase.yml
+
+```
+- hosts: hbase
+  remote_user: root
+  vars_files:
+   - vars/user.yml
+   - vars/var_basic.yml
+   - vars/var_master.yml
+   - vars/var_hbase.yml
+  vars:
+     open_firewall: true       # firewalld
+     install_hbase: true       # install hbase
+     config_hbase: true        # config hbase
+  roles:
+    - hbase
+```
+5. 执行shell
+
+```
+ansible-playbook -i hosts/host  hbase.yml
+
+```
 
 ### License
 
