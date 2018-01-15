@@ -1,9 +1,8 @@
 ---
-
 # hbase basic vars
-download_path: "/home/pippo/Downloads"
-hbase_version: "1.2.6"
-hbase_path: "/home/hadoop"
+download_path: "/home/pippo/Downloads"    # your local download path
+hbase_version: "1.2.6"                    # hbase version
+hbase_path: "/home/hadoop"                # install dir
 hbase_config_path: "/home/hadoop/hbase-{{hbase_version}}/conf"
 
 hbase_tmp: "{{ hbase_path }}/hbase/tmp"
@@ -18,17 +17,17 @@ hbase_create_path:
 
 # hbase configration 
 hbase_hdfs_path: "/hbase"
-zk_hosts: "zookeeper"                 #zookeeper group name in hosts/host
-zk_client_port: 12181               #zookeeper client port
+zk_hosts: "zookeeper"                  #zookeeper group name in hosts/host
+zk_client_port: 12181                  #zookeeper client port
 
-hbase_master_port: 60000
+hbase_master_port: 60000               #hbase port
 hbase_master_info_port: 60010
 hbase_regionserver_port: 60020
 hbase_regionserver_info_port: 60030
 hbase_rest_port: 8060
 
 
-hbase_site_properties:
+hbase_site_properties:                 #property
   - {
       "name":"hbase.master",
       "value":"{{ hbase_master_port }}"

@@ -6,8 +6,8 @@
    - vars/var_master.yml
    - vars/var_hbase.yml
   vars:
-     open_firewall: true
-     install_hbase: false
-     config_hbase: true
+     open_firewall: true       # firewalld
+     install_hbase: true       # install hbase
+     config_hbase: true        # config hbase
   roles:
     - hbase
