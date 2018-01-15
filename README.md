@@ -324,7 +324,7 @@ ansible-playbook -i hosts/host hive.yml
 
 ```
 
-## Hbase
+### Hbase
 
 1. 查看 vars/var_hbase.yml
 
@@ -438,6 +438,109 @@ ansible-playbook -i hosts/host  hbase.yml
 
 ```
 
-### License
+### 安装spark
+1. 下载scala和spark到本机 {{ download_path }}
+2. 查看vars/var_spark.yml
+
+```
+---
+# spark basic vars
+download_path: "/home/pippo/Downloads"    # your local download path
+spark_package_name: "spark-2.2.1-bin-hadoop2.7" # spark package name
+spark_version: "2.2.1"                    # spark version
+spark_path: "/home/hadoop"                # install dir
+spark_config_path: "/home/hadoop/spark-{{spark_version}}/conf"
+
+spark_worker_path: "{{ spark_path }}/spark/worker"
+spark_log_path: "{{ spark_path }}/spark/logs"
+
+master_hostname: "{{ master_hostname }}"
+
+spark_hdfs_path: "hdfs://{{ master_hostname }}:{{ hdfs_port }}/spark/history_log"
+
+spark_create_path:
+  - "{{ spark_worker_path }}"
+  - "{{ spark_log_path }}"
+
+#scala vars
+scala_path: "{{ spark_path }}"
+scala_version: "2.12.4"               # scala version
+
+
+spark_master_port: 17077               #spark port
+spark_history_ui_port: 17777
+spark_web_port: 18080
+
+
+spark_properties:                     #property
+  - {
+      "name":"spark.master",
+      "value":"spark://{{ master_hostname }}:{{ spark_master_port }}"
+  }
+  - {
+      "name":"spark.eventLog.dir",
+      "value":"{{ spark_hdfs_path }}"
+  }
+  - {
+      "name":"spark.eventLog.compress",
+      "value":"true"
+  }
+  - {
+      "name":"spark.history.updateInterval",
+      "value":"5"
+  }
+  - {
+      "name":"spark.history.ui.port",
+      "value":"{{ spark_history_ui_port }}"
+  }
+  - {
+      "name":"spark.history.fs.logDirectory ",
+      "value":"{{ spark_hdfs_path }}"
+  }
+
+firewall_ports:
+  - "{{ spark_master_port }}"
+  - "{{ spark_history_ui_port }}"
+  - "{{ spark_web_port }}"
+
+```
+
+3. 增加spark 到 hosts/host
+
+```
+[spark]
+172.16.251.70
+172.16.251.71
+172.16.251.72
+
+```
+4. 查看spark.yml
+
+```
+- hosts: spark
+  remote_user: root
+  vars_files:
+   - vars/user.yml
+   - vars/var_basic.yml
+   - vars/var_master.yml
+   - vars/var_spark.yml
+  vars:
+     open_firewall: true        # firewalld
+     install_spark: true        # install spark
+     config_spark:  true        # config spark
+     install_scala: true        # install scala
+  roles:
+    - spark
+
+```
+5. 执行shell
+
+```
+master_hostname ： your master hostname
+ansible-playbook -i hosts/host  spark.yml -e "master_hostname=hadoop-master"
+
+```
+
+## License
 
 GNU General Public License v3.0
